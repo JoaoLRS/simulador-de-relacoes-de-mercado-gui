@@ -1,0 +1,21 @@
+Categoria,Empresa,Produto/Serviço,Custo,Qualidade
+Moradia,República A,Aluguel Várzea,300.0,3
+Moradia,República B,Aluguel Várzea,300.0,3
+Moradia,CTI Imobiliária,Aluguel Centro,1500.0,7
+Moradia,Orla Smart Live,Aluguel Boa V.,3000.0,9
+Alimentação,CEASA,Feira do Mês,200.0,3
+Alimentação,Mix Matheus,Feira do Mês,900.0,5
+Alimentação,Pão de Açúcar,Feira do Mês,1500.0,7
+Alimentação,HomeChef,Chef em Casa,6000.0,9
+Transporte,Grande Recife,VEM Ônibus,150.0,3
+Transporte,UBER,Uber Moto,200.0,4
+Transporte,99,99 Moto,200.0,4
+Transporte,BYD,BYD Dolphin,3000.0,8
+Saúde,Health Coop,Plano de Saúde,200.0,2
+Saúde,HapVida,Plano de Saúde,650.0,5
+Saúde,Bradesco Saúde,Plano de Saúde,800.0,5
+Saúde,Sulamérica,Plano de Saúde,850.0,5
+Educação,Escolinha,Mensalidade,100.0,1
+Educação,Mazzarello,Mensalidade,1200.0,6
+Educação,ArcoÍris,Mensalidade,1800.0,8
+Educação,Escolado Porto,Mensalidade,5000.0,9

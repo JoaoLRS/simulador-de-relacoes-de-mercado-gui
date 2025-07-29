@@ -1,10 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
-from funcoes_importantes import *
-
-#TODO: Ana se possivel, as funções devem ser importadas do arquivo funcoes_importantes.py, caso vc n 
-# conseguir fazer isso, a gente pode deixar tudo aqui mesmo, eu n fiz isso pq, priorizei a criação
-#inicial da interface gráfica e a funcionalidade de simulação 
+from funcoes_importantes import iniciar_simulacao, simular_1_mes, resetar_simulacao
+import json
+import csv
+import random
 
 root = tk.Tk()
 root.title("Simulador de relações de Mercado")
@@ -41,45 +40,22 @@ meses_entry.insert(0, "1")
 
 total_meses_simulados = 0
 
-def iniciar_simulacao():
+def iniciar_simulacao_wrapper():
     global total_meses_simulados
-    try:
-        meses = int(meses_entry.get())
-        if meses <= 0:
-            messagebox.showerror("Erro", "O número de meses deve ser maior que zero!")
-            return
-        
-        messagebox.showinfo("Simulação", f"Simulação iniciada para {meses} meses!")
-        
-        total_meses_simulados += meses
-        valor_mes_simulados.set(str(total_meses_simulados))
-        
-    except ValueError:
-        messagebox.showerror("Erro", "Por favor, insira um número válido de meses!")
+    total_meses_simulados = iniciar_simulacao(total_meses_simulados, meses_entry, valor_mes_simulados)
 
-def simular_1_mes():
+def simular_1_mes_wrapper():
     global total_meses_simulados
-    # Simula especificamente 1 mês
-    messagebox.showinfo("Simulação", "Simulação de 1 mês iniciada!")
-    
-    total_meses_simulados += 1
-    valor_mes_simulados.set(str(total_meses_simulados))
+    total_meses_simulados = simular_1_mes(total_meses_simulados, valor_mes_simulados)
 
-def resetar_simulacao():
+def resetar_simulacao_wrapper():
     global total_meses_simulados
-    meses_entry.delete(0, tk.END)
-    meses_entry.insert(0, "1")
-    
-    # Reseta o contador de meses simulados
-    total_meses_simulados = 0
-    valor_mes_simulados.set("0")
-    
-    messagebox.showinfo("Reset", "Simulação resetada!")
+    total_meses_simulados = resetar_simulacao(meses_entry, valor_mes_simulados)
 
 simular_button = tk.Button(controles_frame, 
                           text="Simular",
                           font=("Arial", 16),
-                          command=iniciar_simulacao)
+                          command=iniciar_simulacao_wrapper)
 simular_button.pack(side=tk.LEFT, padx=(0, 15))
 
 
@@ -87,7 +63,7 @@ simular_button.pack(side=tk.LEFT, padx=(0, 15))
 simular_1_mes_button = tk.Button(controles_frame, 
                                  text="Simular 1 mês",  
                                     font=("Arial", 16),
-                                    command=simular_1_mes)
+                                    command=simular_1_mes_wrapper)
 simular_1_mes_button.pack(side=tk.LEFT, padx=(0, 15))
 
 
@@ -95,7 +71,7 @@ simular_1_mes_button.pack(side=tk.LEFT, padx=(0, 15))
 reset_button = tk.Button(controles_frame,
                         text="Resetar",
                         font=("Arial", 16),
-                        command=resetar_simulacao)
+                        command=resetar_simulacao_wrapper)
 reset_button.pack(side=tk.LEFT, padx=(0, 15))
 
 
@@ -156,18 +132,18 @@ categoria_text.configure(yscrollcommand=categoria_scrollbar.set)
 categoria_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 categoria_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-# Conteúdo melhorado das categorias TODO Os dados de categoria deve ser importados
-categoria_content = """CATEGORIAS
+# Carregando os dados de categorias do arquivo JSON
+def carregar_categorias():
+    with open("src/dados/categorias.json", "r", encoding="utf-8") as file:
+        return json.load(file)
 
-Divisão da renda mensal:
+categorias = carregar_categorias()
 
-Moradia: 35.0%
-Alimentação: 25.0%
-Transporte: 10.0%
-Saúde: 10.0%
-Educação: 10.0%
+categoria_content = "CATEGORIAS\n\nDivisão da renda mensal:\n\n"
+for categoria, percentual in categorias.items():
+    categoria_content += f"{categoria}: {percentual * 100:.1f}%\n"
 
-Total: 90.0% da renda mensal"""
+categoria_content += "\nTotal: 90.0% da renda mensal"
 
 categoria_text.insert(tk.END, categoria_content)
 categoria_text.config(state=tk.DISABLED)  # Torna o texto somente para leitura
@@ -191,7 +167,7 @@ pessoas_title.pack(pady=(0, 15))
 tabela_frame = tk.Frame(pessoas_main_frame)
 tabela_frame.pack(fill=tk.BOTH, expand=True)
 
-# Criando tabela de pessoas com scrollbars  TODO Todos esses dados deve ser importados
+# Criando tabela de pessoas com scrollbars  
 colunas_pessoas = ("Nome", "Patrimônio", "Salário", "Renda Mensal", "Conforto")
 tabela_pessoas = ttk.Treeview(tabela_frame, columns=colunas_pessoas, show="headings", height=15)
 
@@ -220,22 +196,36 @@ tabela_pessoas.column("Salário", width=150)
 tabela_pessoas.column("Renda Mensal", width=150)
 tabela_pessoas.column("Conforto", width=100)
 
-# Dados das pessoas com formatação melhorada TODO Todos esses dados deve ser importados
-dados_pessoas = [
-    ("Carla de Carvalho", "R$ 20.000.000,00", "R$ 0,00", "R$ 100.000,00", "0,0%"),
-    ("Francisca Costa", "R$ 20.000.000,00", "R$ 0,00", "R$ 100.000,00", "0,0%"),
-    ("Adriana Santos", "R$ 200.000,00", "R$ 100.000,00", "R$ 101.000,00", "0,0%"),
-    ("João Silva", "R$ 50.000,00", "R$ 5.000,00", "R$ 5.500,00", "0,0%"),
-    ("Maria Oliveira", "R$ 150.000,00", "R$ 8.000,00", "R$ 8.800,00", "0,0%")
-]
+# Carregando os dados de pessoas do arquivo CSV
+def carregar_pessoas():
+    with open("src/dados/pessoas.txt", "r", encoding="utf-8") as file:
+        reader = csv.DictReader(file, skipinitialspace=True)
+        reader.fieldnames = [name.strip() for name in reader.fieldnames]  # Remove espaços extras
+        return [
+            {
+                "Nome": row["nome"].strip(),
+                "Patrimônio": f"R$ {int(row['patrimonio']):,}".replace(",", "."),
+                "Salário": f"R$ {int(row['salario']):,}".replace(",", "."),
+                "Renda Mensal": f"R$ {int(int(row['salario']) * 1.1):,}".replace(",", "."),
+                "Conforto": "0,0%"
+            }
+            for row in reader
+        ]
+
+pessoas = carregar_pessoas()
 
 # Inserindo dados na tabela
-for i, linha in enumerate(dados_pessoas):
-    # Alternando cores das linhas para melhor visualização
-    if i % 2 == 0:
-        item = tabela_pessoas.insert("", tk.END, values=linha, tags=("even",))
-    else:
-        item = tabela_pessoas.insert("", tk.END, values=linha)
+tabela_pessoas.delete(*tabela_pessoas.get_children())
+for i, pessoa in enumerate(pessoas):
+    valores = (
+        pessoa["Nome"],
+        pessoa["Patrimônio"],
+        pessoa["Salário"],
+        pessoa["Renda Mensal"],
+        pessoa["Conforto"]
+    )
+    tags = ("even",) if i % 2 == 0 else ()
+    tabela_pessoas.insert("", tk.END, values=valores, tags=tags)
 
 # Configurando tags para cores alternadas
 tabela_pessoas.tag_configure("even", background="#F8F9FA")
@@ -261,6 +251,48 @@ empresas_placeholder = tk.Label(empresas_main_frame,
                                font=("Arial", 14),
                                fg="#6C757D")
 empresas_placeholder.pack(expand=True)
+
+# Lógica de simulação
+def simular_mudancas():
+    global pessoas
+    for pessoa in pessoas:
+        patrimonio_atual = int(pessoa["Patrimônio"].replace("R$ ", "").replace(".", ""))
+        salario_atual = int(pessoa["Salário"].replace("R$ ", "").replace(".", ""))
+
+        # Simulando mudanças
+        patrimonio_atual += random.randint(-1000, 5000)
+        salario_atual += random.randint(-500, 1000)
+
+        pessoa["Patrimônio"] = f"R$ {patrimonio_atual:,}".replace(",", ".")
+        pessoa["Salário"] = f"R$ {salario_atual:,}".replace(",", ".")
+        pessoa["Renda Mensal"] = f"R$ {int(salario_atual * 1.1):,}".replace(",", ".")
+
+    # Atualizando a tabela
+    tabela_pessoas.delete(*tabela_pessoas.get_children())
+    for i, pessoa in enumerate(pessoas):
+        valores = (
+            pessoa["Nome"],
+            pessoa["Patrimônio"],
+            pessoa["Salário"],
+            pessoa["Renda Mensal"],
+            pessoa["Conforto"]
+        )
+        tags = ("even",) if i % 2 == 0 else ()
+        tabela_pessoas.insert("", tk.END, values=valores, tags=tags)
+
+# Melhorando o visual da interface
+root.configure(bg="#F0F0F0")
+main_frame.configure(bg="#F0F0F0")
+
+# Atualizando o título
+categoria_title.configure(fg="#1E88E5")
+pessoas_title.configure(fg="#1E88E5")
+empresas_title.configure(fg="#1E88E5")
+
+# Atualizando botões
+simular_button.configure(bg="#4CAF50", fg="white", activebackground="#45A049")
+simular_1_mes_button.configure(bg="#4CAF50", fg="white", activebackground="#45A049")
+reset_button.configure(bg="#F44336", fg="white", activebackground="#E53935")
 
 
 

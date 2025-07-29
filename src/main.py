@@ -156,7 +156,7 @@ categoria_text.configure(yscrollcommand=categoria_scrollbar.set)
 categoria_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 categoria_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-# Conteúdo melhorado das categorias TODO Os dados de categoria deve ser inportados
+# Conteúdo melhorado das categorias TODO Os dados de categoria deve ser importados
 categoria_content = """CATEGORIAS
 
 Divisão da renda mensal:
@@ -191,7 +191,7 @@ pessoas_title.pack(pady=(0, 15))
 tabela_frame = tk.Frame(pessoas_main_frame)
 tabela_frame.pack(fill=tk.BOTH, expand=True)
 
-# Criando tabela de pessoas com scrollbars  TODO Todos esses dados deve ser inportados
+# Criando tabela de pessoas com scrollbars  TODO Todos esses dados deve ser importados
 colunas_pessoas = ("Nome", "Patrimônio", "Salário", "Renda Mensal", "Conforto")
 tabela_pessoas = ttk.Treeview(tabela_frame, columns=colunas_pessoas, show="headings", height=15)
 
@@ -220,7 +220,7 @@ tabela_pessoas.column("Salário", width=150)
 tabela_pessoas.column("Renda Mensal", width=150)
 tabela_pessoas.column("Conforto", width=100)
 
-# Dados das pessoas com formatação melhorada TODO Todos esses dados deve ser inportados
+# Dados das pessoas com formatação melhorada TODO Todos esses dados deve ser importados
 dados_pessoas = [
     ("Carla de Carvalho", "R$ 20.000.000,00", "R$ 0,00", "R$ 100.000,00", "0,0%"),
     ("Francisca Costa", "R$ 20.000.000,00", "R$ 0,00", "R$ 100.000,00", "0,0%"),

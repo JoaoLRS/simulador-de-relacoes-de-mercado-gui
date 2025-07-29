@@ -245,12 +245,94 @@ empresas_title = tk.Label(empresas_main_frame,
                          fg="#2E4057")
 empresas_title.pack(pady=(0, 15))
 
-# Placeholder para futuras funcionalidades de empresas
-empresas_placeholder = tk.Label(empresas_main_frame, 
-                               text="📊 Falta criar a logica para os GRAFICOS", 
+# Frame para a tabela com scrollbars
+tabela_empresas_frame = tk.Frame(empresas_main_frame)
+tabela_empresas_frame.pack(fill=tk.BOTH, expand=True)
+
+# Criando tabela de empresas com scrollbars  
+colunas_empresas = ("Categoria", "Empresa", "Produto/Serviço", "Custo", "Qualidade")
+tabela_empresas = ttk.Treeview(tabela_empresas_frame, columns=colunas_empresas, show="headings", height=15)
+
+# Configurando scrollbars
+scrollbar_vertical_empresas = ttk.Scrollbar(tabela_empresas_frame, orient="vertical", command=tabela_empresas.yview)
+scrollbar_horizontal_empresas = ttk.Scrollbar(tabela_empresas_frame, orient="horizontal", command=tabela_empresas.xview)
+tabela_empresas.configure(yscrollcommand=scrollbar_vertical_empresas.set, xscrollcommand=scrollbar_horizontal_empresas.set)
+
+# Posicionando tabela e scrollbars
+tabela_empresas.grid(row=0, column=0, sticky="nsew")
+scrollbar_vertical_empresas.grid(row=0, column=1, sticky="ns")
+scrollbar_horizontal_empresas.grid(row=1, column=0, sticky="ew")
+
+tabela_empresas_frame.grid_rowconfigure(0, weight=1)
+tabela_empresas_frame.grid_columnconfigure(0, weight=1)
+
+# Configurando colunas da tabela
+for col in colunas_empresas:
+    tabela_empresas.heading(col, text=col)
+    tabela_empresas.column(col, anchor=tk.CENTER, width=150)
+
+# Ajustando larguras específicas das colunas
+tabela_empresas.column("Categoria", width=150)
+tabela_empresas.column("Empresa", width=180)
+tabela_empresas.column("Produto/Serviço", width=180)
+tabela_empresas.column("Custo", width=100)
+tabela_empresas.column("Qualidade", width=100)
+
+# Carregando os dados de empresas do arquivo CSV
+def carregar_empresas():
+    with open("src/dados/empresas.csv", "r", encoding="utf-8") as file:
+        reader = csv.reader(file)
+        next(reader)  # Pula o cabeçalho
+        return [
+            {
+                "Categoria": row[0],
+                "Empresa": row[1],
+                "Produto/Serviço": row[2],
+                "Custo": f"R$ {float(row[3]):,.2f}".replace(",", "."),
+                "Qualidade": row[4]
+            }
+            for row in reader
+        ]
+
+empresas = carregar_empresas()
+
+# Inserindo dados na tabela
+tabela_empresas.delete(*tabela_empresas.get_children())
+for i, empresa in enumerate(empresas):
+    valores = (
+        empresa["Categoria"],
+        empresa["Empresa"],
+        empresa["Produto/Serviço"],
+        empresa["Custo"],
+        empresa["Qualidade"]
+    )
+    tags = ("even",) if i % 2 == 0 else ()
+    tabela_empresas.insert("", tk.END, values=valores, tags=tags)
+
+# Configurando tags para cores alternadas
+tabela_empresas.tag_configure("even", background="#F8F9FA")
+
+# Aba de Gráficos
+graficos_frame = tk.Frame(notebook)
+notebook.add(graficos_frame, text="📈 Gráficos")
+
+# Frame principal para gráficos
+graficos_main_frame = tk.Frame(graficos_frame)
+graficos_main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+# Título da seção
+graficos_title = tk.Label(graficos_main_frame, 
+                         text="ANÁLISE DE DADOS", 
+                         font=("Arial", 18, "bold"), 
+                         fg="#2E4057")
+graficos_title.pack(pady=(0, 15))
+
+# Placeholder para a área de gráficos
+graficos_placeholder = tk.Label(graficos_main_frame, 
+                               text="📊 Área reservada para gráficos", 
                                font=("Arial", 14),
                                fg="#6C757D")
-empresas_placeholder.pack(expand=True)
+graficos_placeholder.pack(expand=True)
 
 # Lógica de simulação
 def simular_mudancas():
@@ -288,6 +370,7 @@ main_frame.configure(bg="#F0F0F0")
 categoria_title.configure(fg="#1E88E5")
 pessoas_title.configure(fg="#1E88E5")
 empresas_title.configure(fg="#1E88E5")
+graficos_title.configure(fg="#1E88E5")
 
 # Atualizando botões
 simular_button.configure(bg="#4CAF50", fg="white", activebackground="#45A049")

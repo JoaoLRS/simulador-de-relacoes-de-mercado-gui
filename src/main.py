@@ -1,9 +1,12 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
-from funcoes_importantes import iniciar_simulacao, simular_1_mes, resetar_simulacao
+from funcoes_importantes import ( inicializar_objetos_pessoas, iniciar_simulacao, simular_1_mes, resetar_simulacao)
 import json
 import csv
 import random
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 root = tk.Tk()
 root.title("Simulador de relações de Mercado")
@@ -40,17 +43,19 @@ meses_entry.insert(0, "1")
 
 total_meses_simulados = 0
 
+lista_pessoas_simulacao = []
+
 def iniciar_simulacao_wrapper():
-    global total_meses_simulados
-    total_meses_simulados = iniciar_simulacao(total_meses_simulados, meses_entry, valor_mes_simulados)
+    global total_meses_simulados, lista_pessoas_simulacao
+    total_meses_simulados = iniciar_simulacao(total_meses_simulados, meses_entry, valor_mes_simulados, atualizar_graficos)
 
 def simular_1_mes_wrapper():
-    global total_meses_simulados
-    total_meses_simulados = simular_1_mes(total_meses_simulados, valor_mes_simulados)
+    global total_meses_simulados, lista_pessoas_simulacao
+    total_meses_simulados = simular_1_mes(total_meses_simulados, valor_mes_simulados, atualizar_graficos)
 
 def resetar_simulacao_wrapper():
-    global total_meses_simulados
-    total_meses_simulados = resetar_simulacao(meses_entry, valor_mes_simulados)
+    global total_meses_simulados, lista_pessoas_simulacao, pessoas_dados_iniciais
+    total_meses_simulados = resetar_simulacao(meses_entry, valor_mes_simulados, pessoas_dados_iniciais, atualizar_graficos)
 
 simular_button = tk.Button(controles_frame, 
                           text="Simular",
@@ -75,7 +80,6 @@ reset_button = tk.Button(controles_frame,
 reset_button.pack(side=tk.LEFT, padx=(0, 15))
 
 
-
 #Monstrando meses simulados
 meses_simulados_label = tk.Label(controles_frame, 
                                 text="Meses Simulados:",
@@ -89,11 +93,6 @@ meses_simulados_value = tk.Label(controles_frame,
                                 font=("Arial", 16),
                                 fg="black")
 meses_simulados_value.pack(side=tk.LEFT, padx=(0, 15))
-
-
-
-
-
 
 # Parte das Abas
 
@@ -111,7 +110,7 @@ categoria_main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
 # Título da seção
 categoria_title = tk.Label(categoria_main_frame, 
-                          text="CATEGORIAS DE GASTOS", 
+                          text="Divisão da Renda Mensal", 
                           font=("Arial", 18, "bold"), 
                           fg="#2E4057")
 categoria_title.pack(pady=(0, 15))
@@ -158,7 +157,7 @@ pessoas_main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
 # Título da seção
 pessoas_title = tk.Label(pessoas_main_frame, 
-                        text="PESSOAS NO SISTEMA", 
+                        text="Pessoas e Patrimônio", 
                         font=("Arial", 18, "bold"), 
                         fg="#2E4057")
 pessoas_title.pack(pady=(0, 15))
@@ -196,7 +195,7 @@ tabela_pessoas.column("Salário", width=150)
 tabela_pessoas.column("Renda Mensal", width=150)
 tabela_pessoas.column("Conforto", width=100)
 
-# Carregando os dados de pessoas do arquivo CSV
+
 def carregar_pessoas():
     with open("src/dados/pessoas.txt", "r", encoding="utf-8") as file:
         reader = csv.DictReader(file, skipinitialspace=True)
@@ -212,7 +211,12 @@ def carregar_pessoas():
             for row in reader
         ]
 
+# Carregando os dados de pessoas
 pessoas = carregar_pessoas()
+
+# Inicializando variáveis globais para simulação
+pessoas_dados_iniciais = carregar_pessoas()
+lista_pessoas_simulacao = inicializar_objetos_pessoas(pessoas_dados_iniciais)
 
 # Inserindo dados na tabela
 tabela_pessoas.delete(*tabela_pessoas.get_children())
@@ -240,7 +244,7 @@ empresas_main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
 # Título da seção
 empresas_title = tk.Label(empresas_main_frame, 
-                         text="EMPRESAS NO MERCADO", 
+                         text="Empresas e Produtos", 
                          font=("Arial", 18, "bold"), 
                          fg="#2E4057")
 empresas_title.pack(pady=(0, 15))
@@ -278,7 +282,6 @@ tabela_empresas.column("Produto/Serviço", width=180)
 tabela_empresas.column("Custo", width=100)
 tabela_empresas.column("Qualidade", width=100)
 
-# Carregando os dados de empresas do arquivo CSV
 def carregar_empresas():
     with open("src/dados/empresas.csv", "r", encoding="utf-8") as file:
         reader = csv.reader(file)
@@ -320,19 +323,50 @@ notebook.add(graficos_frame, text="📈 Gráficos")
 graficos_main_frame = tk.Frame(graficos_frame)
 graficos_main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-# Título da seção
+
 graficos_title = tk.Label(graficos_main_frame, 
-                         text="ANÁLISE DE DADOS", 
+                         text="", 
                          font=("Arial", 18, "bold"), 
                          fg="#2E4057")
-graficos_title.pack(pady=(0, 15))
+graficos_title.pack(pady=(0, 5))
 
-# Placeholder para a área de gráficos
-graficos_placeholder = tk.Label(graficos_main_frame, 
-                               text="📊 Área reservada para gráficos", 
-                               font=("Arial", 14),
-                               fg="#6C757D")
-graficos_placeholder.pack(expand=True)
+# Container principal para organizar os gráficos em grid para garantir tamanhos iguais
+graficos_container = tk.Frame(graficos_main_frame)
+graficos_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+# Grid para garantir que as linhas tenham o mesmo tamanho
+graficos_container.grid_rowconfigure(0, weight=1)
+graficos_container.grid_rowconfigure(1, weight=1)
+graficos_container.grid_columnconfigure(0, weight=1)
+
+# Dois frames separados com bordas para os gráficos
+grafico1_frame = tk.Frame(graficos_container, borderwidth=2, relief=tk.RIDGE, bg="#F8F9FA")
+grafico1_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+
+grafico2_frame = tk.Frame(graficos_container, borderwidth=2, relief=tk.RIDGE, bg="#F8F9FA")
+grafico2_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
+
+# Função para configuração idêntica dos gráficos
+def configurar_grafico(figura, eixo, frame):
+    canvas = FigureCanvasTkAgg(figura, master=frame)
+    canvas.draw()
+    canvas_widget = canvas.get_tk_widget()
+    canvas_widget.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+    return canvas
+
+# Ajustando o tamanho da figura 
+fig1 = Figure(figsize=(8, 2.5), dpi=100)
+ax1 = fig1.add_subplot(111) # Um único gráfico na figura
+fig1.subplots_adjust(top=0.85, bottom=0.25, left=0.1, right=0.9)
+
+# Tamanho da figura para o segundo gráfico 
+fig2 = Figure(figsize=(8, 2.5), dpi=100)
+ax2 = fig2.add_subplot(111) # Um único gráfico na figura
+fig2.subplots_adjust(top=0.85, bottom=0.25, left=0.1, right=0.9)
+
+# Canvas para ambos os gráficos 
+canvas1 = configurar_grafico(fig1, ax1, grafico1_frame)
+canvas2 = configurar_grafico(fig2, ax2, grafico2_frame)
 
 # Lógica de simulação
 def simular_mudancas():
@@ -370,13 +404,84 @@ main_frame.configure(bg="#F0F0F0")
 categoria_title.configure(fg="#1E88E5")
 pessoas_title.configure(fg="#1E88E5")
 empresas_title.configure(fg="#1E88E5")
-graficos_title.configure(fg="#1E88E5")
 
 # Atualizando botões
 simular_button.configure(bg="#4CAF50", fg="white", activebackground="#45A049")
 simular_1_mes_button.configure(bg="#4CAF50", fg="white", activebackground="#45A049")
 reset_button.configure(bg="#F44336", fg="white", activebackground="#E53935")
 
+def atualizar_tabela_pessoas(lista_pessoas_obj):
+    tabela_pessoas.delete(*tabela_pessoas.get_children())
+    for i, pessoa in enumerate(lista_pessoas_obj):
+        valores = (
+            pessoa.nome,
+            f"R$ {int(pessoa.patrimonio):,}".replace(",", "."),
+            f"R$ {int(pessoa.salario):,}".replace(",", "."),
+            f"R$ {int(pessoa.rendimento_mensal):,}".replace(",", "."),
+            f"{pessoa.conforto:.1f}"
+        )
+        tags = ("even",) if i % 2 == 0 else ()
+        tabela_pessoas.insert("", tk.END, values=valores, tags=tags)
 
+def atualizar_graficos(lista_pessoas):
+    ax1.clear()
+    ax2.clear()
+
+    # Importa valores originais de salário de pessoas.txt
+    rows_txt = []
+    with open("src/dados/pessoas.txt", "r", encoding="utf-8") as f_txt:
+        reader_txt = csv.DictReader(f_txt, skipinitialspace=True)
+        reader_txt.fieldnames = [h.strip() for h in reader_txt.fieldnames]
+        for row_txt in reader_txt:
+            clean_row = {k.strip(): v for k, v in row_txt.items()}
+            rows_txt.append(clean_row)
+    nomes = [p.nome for p in lista_pessoas]
+    salarios = [int(next(r for r in rows_txt if r['nome'].strip() == p.nome)['salario']) for p in lista_pessoas]
+    rendimentos = [p.rendimento_mensal for p in lista_pessoas]
+    conforto = [p.conforto for p in lista_pessoas]
+
+    x = range(len(nomes)) # eixo X
+
+    # Função para configuração comum dos gráficos
+    def configurar_estilo_grafico(ax):
+        ax.set_ylabel("")
+        ax.set_xticks([])
+        ax.grid(axis='y', linestyle='--', alpha=0.7)
+        ax.set_frame_on(True)
+    
+    nomes = [p.nome for p in lista_pessoas]
+    salarios = [p.salario for p in lista_pessoas]
+
+    # GRÁFICO 1: Salário e Rendimentos 
+    ax1.bar(x, salarios, color='limegreen', label='Salário')
+    ax1.bar(x, rendimentos, bottom=salarios, color='darkviolet', label='Rendimentos')
+    
+    # Ajusta dinamicamente o limite do eixo Y com base nos dados de salário e rendimento
+    total_values = [s + r for s, r in zip(salarios, rendimentos)]
+    max_total = max(total_values) if total_values else 0
+    ax1.set_ylim(0, max_total * 1.1) 
+    
+    configurar_estilo_grafico(ax1)
+
+    ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=False, ncol=2)
+
+    # GRÁFICO 2: Nível de Conforto 
+    ax2.bar(x, conforto, color='dodgerblue', label='Conforto')
+    
+    ax2.set_ylim(0, 40)  
+    ax2.set_yticks([0, 8, 16, 24, 32, 40])
+    ax2.set_yticklabels(['0.0', '8.0', '16.0', '24.0', '32.0', '40.0'])
+    
+    configurar_estilo_grafico(ax2)
+    
+    ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=False, ncol=1)
+
+
+    canvas1.draw()
+    canvas2.draw()
+
+    atualizar_tabela_pessoas(lista_pessoas)
+
+atualizar_graficos(lista_pessoas_simulacao)
 
 root.mainloop()

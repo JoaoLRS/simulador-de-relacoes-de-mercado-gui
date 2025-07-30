@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
-from funcoes_importantes import ( inicializar_objetos_pessoas, iniciar_simulacao, simular_1_mes, resetar_simulacao)
+from funcoes_importantes import ( inicializar_objetos_pessoas, inicializar_objetos_empresas, iniciar_simulacao, simular_1_mes, resetar_simulacao)
 import json
 import csv
 import random
@@ -38,7 +38,7 @@ title_label.pack(pady=(10,20))
 controles_frame = tk.Frame(main_frame, bg=SURFACE)  
 controles_frame.pack(fill=tk.X, side=tk.TOP, anchor=tk.W, padx=15, pady=(0, 20))
         
-# Label e Entry para o número de meses para simular
+# Label e Entry para o número de meses que vai simular
 meses_simular_label = tk.Label(controles_frame,
                                 text="Meses para simular:",
                                 font=("Arial", 16), fg=ON_SURFACE, bg=SURFACE)
@@ -54,6 +54,7 @@ meses_entry.pack(side=tk.LEFT, padx=(0, 15))
 total_meses_simulados = 0
 
 lista_pessoas_simulacao = []
+lista_empresas_simulacao = []  
 
 def iniciar_simulacao_wrapper():
     global total_meses_simulados, lista_pessoas_simulacao
@@ -63,9 +64,8 @@ def iniciar_simulacao_wrapper():
 
 def simular_1_mes_wrapper():
     global total_meses_simulados, lista_pessoas_simulacao
-    total_meses_simulados = simular_1_mes(total_meses_simulados, valor_mes_simulados, atualizar_graficos)
-    # Atualiza gráficos e tabela após simular 1 mês
-    atualizar_graficos(lista_pessoas_simulacao)
+    total_meses_simulados = simular_1_mes(total_meses_simulados, valor_mes_simulados, atualizar_graficos, True)
+    # Atualiza gráficos e tabela após simular 1 mês 
 
 def resetar_simulacao_wrapper():
     global total_meses_simulados, lista_pessoas_simulacao, pessoas_dados_iniciais
@@ -227,19 +227,43 @@ def carregar_pessoas():
                 "Nome": row["nome"].strip(),
                 "Patrimônio": f"R$ {int(row['patrimonio']):,}".replace(",", "."),
                 "Salário": f"R$ {int(row['salario']):,}".replace(",", "."),
-                # Renda Mensal inicial: salário + 0.5% do patrimônio
+                # Renda Mensal inicial
                 "Renda Mensal": f"R$ {(float(row['salario']) + float(row['patrimonio']) * 0.005):.2f}",
                 "Conforto": "0,0%"
             }
             for row in reader
         ]
 
+def carregar_empresas():
+    from empresa import Empresa
+    path = os.path.join(BASE_DIR, 'dados', 'empresas.csv')
+    empresas_objetos = []
+    with open(path, "r", encoding="utf-8") as file:
+        reader = csv.reader(file)
+        next(reader) 
+        for row in reader:
+            categoria = row[0]
+            nome = row[1]
+            produto = row[2]
+            custo = float(row[3])
+            qualidade = int(row[4])
+            
+            # Cria objeto Empresa
+            empresa_obj = Empresa(categoria, nome, produto, custo, qualidade)
+            empresas_objetos.append(empresa_obj)
+    
+    return empresas_objetos
+
 # Carregando os dados de pessoas
 pessoas = carregar_pessoas()
+
+# Carregando os dados de empresas
+empresas = carregar_empresas()
 
 # Inicializando variáveis globais para simulação
 pessoas_dados_iniciais = carregar_pessoas()
 lista_pessoas_simulacao = inicializar_objetos_pessoas(pessoas_dados_iniciais)
+lista_empresas_simulacao = inicializar_objetos_empresas(empresas)
 
 # Inserindo dados na tabela
 tabela_pessoas.delete(*tabela_pessoas.get_children())
@@ -277,7 +301,7 @@ tabela_empresas_frame = tk.Frame(empresas_main_frame)
 tabela_empresas_frame.pack(fill=tk.BOTH, expand=True)
 
 # Criando tabela de empresas com scrollbars  
-colunas_empresas = ("Categoria", "Empresa", "Produto/Serviço", "Custo", "Qualidade")
+colunas_empresas = ("Categoria", "Nome", "Produto", "Qualidade", "Margem", "Custo", "Preço", "Lucro Total", "Vendas")
 tabela_empresas = ttk.Treeview(tabela_empresas_frame, columns=colunas_empresas, show="headings", height=15)
 
 # Configurando scrollbars
@@ -299,42 +323,37 @@ for col in colunas_empresas:
     tabela_empresas.column(col, anchor=tk.CENTER, width=150)
 
 # Ajustando larguras específicas das colunas
-tabela_empresas.column("Categoria", width=150)
-tabela_empresas.column("Empresa", width=180)
-tabela_empresas.column("Produto/Serviço", width=180)
+tabela_empresas.column("Categoria", width=120)
+tabela_empresas.column("Nome", width=150)
+tabela_empresas.column("Produto", width=150)
+tabela_empresas.column("Qualidade", width=80)
+tabela_empresas.column("Margem", width=80)
 tabela_empresas.column("Custo", width=100)
-tabela_empresas.column("Qualidade", width=100)
+tabela_empresas.column("Preço", width=100)
+tabela_empresas.column("Lucro Total", width=120)
+tabela_empresas.column("Vendas", width=80)
 
-def carregar_empresas():
-    path = os.path.join(BASE_DIR, 'dados', 'empresas.csv')
-    with open(path, "r", encoding="utf-8") as file:
-        reader = csv.reader(file)
-        next(reader) 
-        return [
-            {
-                "Categoria": row[0],
-                "Empresa": row[1],
-                "Produto/Serviço": row[2],
-                "Custo": f"R$ {float(row[3]):,.2f}".replace(",", "."),
-                "Qualidade": row[4]
-            }
-            for row in reader
-        ]
-
-empresas = carregar_empresas()
-
-# Inserindo dados na tabela
+# Inserindo dados na tabela (empresas já foram carregadas anteriormente)
 tabela_empresas.delete(*tabela_empresas.get_children())
 for i, empresa in enumerate(empresas):
     valores = (
-        empresa["Categoria"],
-        empresa["Empresa"],
-        empresa["Produto/Serviço"],
-        empresa["Custo"],
-        empresa["Qualidade"]
+        empresa.categoria,
+        empresa.nome,
+        empresa.produto,
+        f"{empresa.qualidade}.0",
+        f"{empresa.margem * 100:.1f}%",
+        f"R$ {empresa.custo:.2f}",
+        f"R$ {empresa.get_preco():.2f}",
+        f"R$ {empresa.lucro_total:.2f}",
+        str(empresa.vendas)
     )
     tags = ("even",) if i % 2 == 0 else ()
     tabela_empresas.insert("", tk.END, values=valores, tags=tags)
+
+# Debug: Imprime informações das empresas carregadas
+print(f"Carregadas {len(empresas)} empresas")
+for empresa in empresas[:3]:  # Mostra apenas as 3 primeiras
+    print(f"Empresa: {empresa.nome}, Oferta: {empresa.oferta}, Vendas: {empresa.vendas}")
 
 # Configurando tags para cores alternadas
 tabela_empresas.tag_configure("even", background="#F8F9FA")
@@ -451,7 +470,26 @@ def atualizar_tabela_pessoas(lista_pessoas_obj):
         tags = ("even",) if i % 2 == 0 else ()
         tabela_pessoas.insert("", tk.END, values=valores, tags=tags)
 
+def atualizar_tabela_empresas(lista_empresas_obj):
+    """Atualiza a tabela de empresas com os dados atuais"""
+    tabela_empresas.delete(*tabela_empresas.get_children())
+    for i, empresa in enumerate(lista_empresas_obj):
+        valores = (
+            empresa.categoria,
+            empresa.nome,
+            empresa.produto,
+            f"{empresa.qualidade}.0",
+            f"{empresa.margem * 100:.1f}%",
+            f"R$ {empresa.custo:.2f}",
+            f"R$ {empresa.get_preco():.2f}",
+            f"R$ {empresa.lucro_total:.2f}",
+            str(empresa.vendas)
+        )
+        tags = ("even",) if i % 2 == 0 else ()
+        tabela_empresas.insert("", tk.END, values=valores, tags=tags)
+
 def atualizar_graficos(lista_pessoas):
+    global lista_empresas_simulacao 
     ax1.clear()
     ax2.clear()
 
@@ -500,11 +538,12 @@ def atualizar_graficos(lista_pessoas):
     ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=False, ncol=1)
     ax2.set_xlim(-0.5, len(nomes)-0.5)
 
-
     canvas1.draw()
     canvas2.draw()
 
+    # Atualiza as tabelas com dados atuais das simulações
     atualizar_tabela_pessoas(lista_pessoas)
+    atualizar_tabela_empresas(lista_empresas_simulacao)  
 
 atualizar_graficos(lista_pessoas_simulacao)
 

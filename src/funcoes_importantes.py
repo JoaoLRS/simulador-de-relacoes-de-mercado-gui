@@ -24,17 +24,17 @@ def simular_1_mes(total_meses_simulados, valor_mes_simulados, callback_atualizar
     # Lógica de simulação de 1 mês 
     for pessoa in lista_de_pessoas_simulacao:
         
-        # LÓGICA DE RENDIMENTO: 
-        rendimento_extra = pessoa.patrimonio * 0.005
-        renda_total_recebida = pessoa.salario + rendimento_extra
-        pessoa.rendimento_mensal = renda_total_recebida
+        # Cresce a renda mensal em 0.40646% a cada mês
+        pessoa.rendimento_mensal = round(pessoa.rendimento_mensal * 1.0040646, 2)
 
-        # LÓGICA DE CONFORTO 
+        # LÓGICA DE CONFORTO e atualização de patrimônio
         gastos_essenciais = pessoa.salario * 0.9
-        sobra = renda_total_recebida - gastos_essenciais
-        
+        # calcula sobra com base na renda mensal atual
+        sobra = pessoa.rendimento_mensal - gastos_essenciais
+        # incrementa patrimônio conforme sobra
         pessoa.patrimonio += sobra
-        pessoa.conforto = max(0, sobra / 1000)
+        # define conforto até máximo de 40
+        pessoa.conforto = min(max(0, sobra / 1000), 40)
 
     total_meses_simulados += 1
     valor_mes_simulados.set(str(total_meses_simulados))

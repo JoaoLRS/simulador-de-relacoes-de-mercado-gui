@@ -205,7 +205,8 @@ def carregar_pessoas():
                 "Nome": row["nome"].strip(),
                 "Patrimônio": f"R$ {int(row['patrimonio']):,}".replace(",", "."),
                 "Salário": f"R$ {int(row['salario']):,}".replace(",", "."),
-                "Renda Mensal": f"R$ {int(int(row['salario']) * 1.1):,}".replace(",", "."),
+                # Renda Mensal inicial: salário + 0.5% do patrimônio
+                "Renda Mensal": f"R$ {int(int(row['salario']) + int(row['patrimonio']) * 0.005):,}".replace(",", "."),
                 "Conforto": "0,0%"
             }
             for row in reader
@@ -427,16 +428,9 @@ def atualizar_graficos(lista_pessoas):
     ax1.clear()
     ax2.clear()
 
-    # Importa valores originais de salário de pessoas.txt
-    rows_txt = []
-    with open("src/dados/pessoas.txt", "r", encoding="utf-8") as f_txt:
-        reader_txt = csv.DictReader(f_txt, skipinitialspace=True)
-        reader_txt.fieldnames = [h.strip() for h in reader_txt.fieldnames]
-        for row_txt in reader_txt:
-            clean_row = {k.strip(): v for k, v in row_txt.items()}
-            rows_txt.append(clean_row)
+    # Extrai diretamente dos objetos Pessoa
     nomes = [p.nome for p in lista_pessoas]
-    salarios = [int(next(r for r in rows_txt if r['nome'].strip() == p.nome)['salario']) for p in lista_pessoas]
+    salarios = [p.salario for p in lista_pessoas]
     rendimentos = [p.rendimento_mensal for p in lista_pessoas]
     conforto = [p.conforto for p in lista_pessoas]
 
@@ -456,10 +450,10 @@ def atualizar_graficos(lista_pessoas):
     ax1.bar(x, salarios, color='limegreen', label='Salário')
     ax1.bar(x, rendimentos, bottom=salarios, color='darkviolet', label='Rendimentos')
     
-    # Ajusta dinamicamente o limite do eixo Y com base nos dados de salário e rendimento
-    total_values = [s + r for s, r in zip(salarios, rendimentos)]
-    max_total = max(total_values) if total_values else 0
-    ax1.set_ylim(0, max_total * 1.1) 
+    tick_values = [0, 20282, 40565, 60847, 81129, 101411]
+    ax1.set_ylim(0, 101411)
+    ax1.set_yticks(tick_values)
+    ax1.set_yticklabels(['R$ 0', 'R$ 20282', 'R$ 40565', 'R$ 60847', 'R$ 81129', 'R$ 101411'])
     
     configurar_estilo_grafico(ax1)
 

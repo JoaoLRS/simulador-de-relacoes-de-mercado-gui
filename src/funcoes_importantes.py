@@ -13,7 +13,8 @@ def inicializar_objetos_pessoas(pessoas_dados):
         patrimonio = float(p_dado["Patrimônio"].replace("R$ ", "").replace(".", "").replace(",", "."))
         salario = float(p_dado["Salário"].replace("R$ ", "").replace(".", "").replace(",", "."))
         pessoa_obj = Pessoa(nome, patrimonio, salario)
-        pessoa_obj.rendimento_mensal = pessoa_obj.patrimonio * 0.005
+        # Inicializa rendimento_mensal = salário + 0.5% do patrimônio
+        pessoa_obj.rendimento_mensal = pessoa_obj.salario + pessoa_obj.patrimonio * 0.005
         lista_de_pessoas_simulacao.append(pessoa_obj)
     return lista_de_pessoas_simulacao
 
@@ -23,10 +24,10 @@ def simular_1_mes(total_meses_simulados, valor_mes_simulados, callback_atualizar
     # Lógica de simulação de 1 mês 
     for pessoa in lista_de_pessoas_simulacao:
         
-        # LÓGICA DE RENDIMENTO: rendimento extra de 0.5% do patrimônio
+        # LÓGICA DE RENDIMENTO: 
         rendimento_extra = pessoa.patrimonio * 0.005
         renda_total_recebida = pessoa.salario + rendimento_extra
-        pessoa.rendimento_mensal = rendimento_extra
+        pessoa.rendimento_mensal = renda_total_recebida
 
         # LÓGICA DE CONFORTO 
         gastos_essenciais = pessoa.salario * 0.9
